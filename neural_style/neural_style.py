@@ -12,9 +12,9 @@ from torchvision import datasets
 from torchvision import transforms
 import torch.onnx
 
-import utils
-from transformer_net import TransformerNet
-from vgg import Vgg16
+import FastNeuralStyle.neural_style.utils
+from FastNeuralStyle.neural_style.transformer_net import TransformerNet
+from FastNeuralStyle.neural_style.vgg import Vgg16
 
 
 def check_paths(args):
