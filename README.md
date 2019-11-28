@@ -45,6 +45,7 @@ class HyperParameter:
 > [코드](https://github.com/sanghoho/Fast-Neural-Style-Transfer-Pytorch/tree/master/neural_style/core/neural_style.py)의 `HyperParameter` class 참고
 
 ### Stylize image
+
 ```python
 from ParentDir.core import neural_style
 
@@ -65,6 +66,7 @@ neural_style.stylize(param)
 학습 중 얻을 수 있는 **checkpoint**의 `.pth` 파일이나, 학습이 모두 끝난 뒤 얻을 수 있는 `.model` 파일을 지정해서 학습된 스타일로 **content image**를 변환시켜줍니다. 
 
 ### Train model
+
 ```python
 from ParentDir.core import neural_style
 

@@ -73,6 +73,13 @@ def check_paths(param):
         print(e)
         sys.exit(1)
 
+def get_value_from_checkpoint(checkpoint_dir):
+    latest_checkpoint = os.listdir(checkpoint_dir)[-1]
+    checkpoint_val = re.findall(r'\d+', latest_checkpoint)
+    checkpoint_val = map(int, checkpoint_val)
+
+    return tuple(checkpoint_val)
+
 
 def train(param):
     device = torch.device("cuda" if param.cuda else "cpu")
@@ -105,7 +112,24 @@ def train(param):
     features_style = vgg(Utils.normalize_batch(style))
     gram_style = [Utils.gram_matrix(y) for y in features_style]
 
-    for e in range(param.epochs):
+    transfer_learning = bool(param.transfer_learning)
+
+    if transfer_learning: 
+        model_dir = args.save_model_dir
+        checkpoint_dir = os.path.join(model_dir, "checkpoint")
+        check_epoch, check_batch_id = get_value_from_checkpoint(checkpoint_dir)
+
+        ckpt_model_path = os.path.join(args.checkpoint_model_dir, f"ckpt_epoch_{check_epoch}_batch_id_{check_batch_id}.pth")
+        checkpoint = torch.load(ckpt_model_path, map_location=device)
+        transformer.load_state_dict(checkpoint)
+        transformer.to(device)
+
+        transfer_learning_epoch = check_epoch + 1
+    else:
+        check_epoch, check_batch_id = 0, -1
+        transfer_learning_epoch = 0
+
+    for e in range(transfer_learning_epoch, param.epochs):
         transformer.train()
         agg_content_loss = 0.
         agg_style_loss = 0.
@@ -213,74 +237,3 @@ def stylize_onnx_caffe2(content_image, param):
     c2_out = prepared_backend.run(inp)[0]
 
     return torch.from_numpy(c2_out)
-
-
-# def main():
-#     main_arg_parser = argparse.ArgumentParser(description="parser for fast-neural-style")
-#     subparsers = main_arg_parser.add_subparsers(title="subcommands", dest="subcommand")
-
-#     train_arg_parser = subparsers.add_parser("train", help="parser for training arguments")
-#     train_arg_parser.add_argument("--epochs", type=int, default=2,
-#                                   help="number of training epochs, default is 2")
-#     train_arg_parser.add_argument("--batch-size", type=int, default=4,
-#                                   help="batch size for training, default is 4")
-#     train_arg_parser.add_argument("--dataset", type=str, required=True,
-#                                   help="path to training dataset, the path should point to a folder "
-#                                        "containing another folder with all the training images")
-#     train_arg_parser.add_argument("--style-image", type=str, default="images/style-images/mosaic.jpg",
-#                                   help="path to style-image")
-#     train_arg_parser.add_argument("--save-model-dir", type=str, required=True,
-#                                   help="path to folder where trained model will be saved.")
-#     train_arg_parser.add_argument("--checkpoint-model-dir", type=str, default=None,
-#                                   help="path to folder where checkpoints of trained models will be saved")
-#     train_arg_parser.add_argument("--image-size", type=int, default=256,
-#                                   help="size of training images, default is 256 X 256")
-#     train_arg_parser.add_argument("--style-size", type=int, default=None,
-#                                   help="size of style-image, default is the original size of style image")
-#     train_arg_parser.add_argument("--cuda", type=int, required=True,
-#                                   help="set it to 1 for running on GPU, 0 for CPU")
-#     train_arg_parser.add_argument("--seed", type=int, default=42,
-#                                   help="random seed for training")
-#     train_arg_parser.add_argument("--content-weight", type=float, default=1e5,
-#                                   help="weight for content-loss, default is 1e5")
-#     train_arg_parser.add_argument("--style-weight", type=float, default=1e10,
-#                                   help="weight for style-loss, default is 1e10")
-#     train_arg_parser.add_argument("--lr", type=float, default=1e-3,
-#                                   help="learning rate, default is 1e-3")
-#     train_arg_parser.add_argument("--log-interval", type=int, default=500,
-#                                   help="number of images after which the training loss is logged, default is 500")
-#     train_arg_parser.add_argument("--checkpoint-interval", type=int, default=2000,
-#                                   help="number of batches after which a checkpoint of the trained model will be created")
-
-#     eval_arg_parser = subparsers.add_parser("eval", help="parser for evaluation/stylizing arguments")
-#     eval_arg_parser.add_argument("--content-image", type=str, required=True,
-#                                  help="path to content image you want to stylize")
-#     eval_arg_parser.add_argument("--content-scale", type=float, default=None,
-#                                  help="factor for scaling down the content image")
-#     eval_arg_parser.add_argument("--output-image", type=str, required=True,
-#                                  help="path for saving the output image")
-#     eval_arg_parser.add_argument("--model", type=str, required=True,
-#                                  help="saved model to be used for stylizing the image. If file ends in .pth - PyTorch path is used, if in .onnx - Caffe2 path")
-#     eval_arg_parser.add_argument("--cuda", type=int, required=True,
-#                                  help="set it to 1 for running on GPU, 0 for CPU")
-#     eval_arg_parser.add_argument("--export_onnx", type=str,
-#                                  help="export ONNX model to a given file")
-
-#     param = main_arg_parser.parse_param()
-
-#     if param.subcommand is None:
-#         print("ERROR: specify either train or eval")
-#         sys.exit(1)
-#     if param.cuda and not torch.cuda.is_available():
-#         print("ERROR: cuda is not available, try running on CPU")
-#         sys.exit(1)
-
-#     if param.subcommand == "train":
-#         check_paths(param)
-#         train(param)
-#     else:
-#         stylize(param)
-
-
-# if __name__ == "__main__":
-#     main()
