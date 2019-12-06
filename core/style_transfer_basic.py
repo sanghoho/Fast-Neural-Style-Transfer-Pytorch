@@ -36,7 +36,6 @@ class StyleTransfer:
 
         assert self.style_img.size() == self.content_img.size(), \
             "we need to import style and content images of the same size"
-
         root = __name__.split(".")[0]
         vgg_model = pkg_resources.resource_filename(root, "models/vgg/vgg19-dcbb9e9d.pth")
 
