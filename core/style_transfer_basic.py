@@ -15,7 +15,7 @@ import torchvision.models as models
 import copy, os, pkg_resources
 
 class StyleTransfer:
-    def __init__(self, style_img, content_img, imgsize):
+    def __init__(self, style_img, content_img, imgsize, output_path):
         super(StyleTransfer, self).__init__()
         self.loader = transforms.Compose([
             transforms.Scale(imgsize),       # 한 축을 128로 조절하고
@@ -26,6 +26,7 @@ class StyleTransfer:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.style_img = self.image_loader(style_img)
         self.content_img = self.image_loader(content_img)
+        self.output_path = output_path
         torch.cuda.empty_cache()
 
         
@@ -63,7 +64,7 @@ class StyleTransfer:
     def save_image(self, tensor):
         image = tensor.cpu().clone()  # we clone the tensor to not do changes on it
         image = image.squeeze(0)      # remove the fake batch dimension
-        torchvision.utils.save_image(image, "data/neural/output/output.png")
+        torchvision.utils.save_image(image, self.output_path)
 
     def image_loader(self, image_name):
         image = Image.open(image_name)
